@@ -58,7 +58,8 @@ otelAgent:
   # nodeSelector:
   #   kubernetes.io/os: linux
   #   node-type: worker
-  nodeSelector: {}
+  nodeSelector: 
+    Name: kyverno
   # tolerations allows the pod to be scheduled on nodes with matching taints
   # Example:
   # tolerations:
@@ -66,7 +67,11 @@ otelAgent:
   #   operator: "Equal"
   #   value: "nirmata"
   #   effect: "NoSchedule"
-  tolerations: []
+  tolerations: 
+  - key: Name
+    operator: Equal
+    value: kyverno
+    effect: NoSchedule 
 
 # kubeController contains configuration for the nirmata-kube-controller.
 kubeController:
@@ -91,7 +96,8 @@ kubeController:
   # nodeSelector:
   #   kubernetes.io/os: linux
   #   node-type: worker
-  nodeSelector: {}
+  nodeSelector: 
+    Name: kyverno
   # tolerations allows the pod to be scheduled on nodes with matching taints
   # Note: A default toleration for master nodes is automatically included
   # Example:
@@ -100,7 +106,11 @@ kubeController:
   #   operator: "Equal"
   #   value: "nirmata"
   #   effect: "NoSchedule"
-  tolerations: []
+  tolerations: 
+  - key: Name
+    operator: Equal
+    value: kyverno
+    effect: NoSchedule 
 
 # cluster contains configuration related to the Kubernetes cluster which is being onboarded to NCH.
 cluster:

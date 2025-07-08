@@ -427,9 +427,13 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector: {}
-
-tolerations: []
+nodeSelector: 
+  Name: kyverno
+tolerations: 
+  - key: Name
+    operator: Equal
+    value: kyverno
+    effect: NoSchedule 
 
 affinity: {}
 
@@ -511,10 +515,15 @@ crds:
     podSecurityContext: {}
 
     # -- Node labels for pod assignment
-    nodeSelector: {}
+    nodeSelector: 
+      Name: kyverno
 
     # -- List of node taints to tolerate
-    tolerations: []
+    tolerations: 
+    - key: Name
+      operator: Equal
+      value: kyverno
+      effect: NoSchedule 
 
     # -- Pod anti affinity constraints.
     podAntiAffinity: {}
