@@ -1,0 +1,552 @@
+{{- $readWriteMode := .Values.readWriteMode | default false }}
+
+{{- $features := .Values.features | default dict }}
+
+{{- $policyExceptions := get $features "policyExceptions" | default dict }}
+{{- $peEnabled := hasKey $policyExceptions "enabled" | ternary $policyExceptions.enabled $readWriteMode }}
+
+{{- $policySets := get $features "policySets" | default dict }}
+{{- $psEnabled := hasKey $policySets "enabled" | ternary $policySets.enabled $readWriteMode }}
+
+{{- if and .Values.kubeController.customCACert (not .Values.kubeController.customCaConfigMap) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nirmata-ca-cert
+  namespace: {{ .Values.namespace }}
+data:
+  ca.crt: |
+{{ .Values.kubeController.customCACert | indent 4 }}
+{{- end }}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nirmata
+  namespace: {{ .Release.Namespace }}
+secrets:
+- name: nirmata-sa-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nirmata-sa-secret
+  namespace: {{ .Values.namespace }}
+  annotations:
+    kubernetes.io/service-account.name: nirmata
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nirmata:readonly-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+- kind: ServiceAccount
+  name: nirmata
+  namespace: {{ .Values.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nirmata:controller
+  namespace: {{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+- kind: ServiceAccount
+  name: nirmata
+  namespace: {{ .Values.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nirmata:readonly
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups: ["kyverno.io", "operator.kyverno.io"]
+  resources:
+  - policies
+  - policies/status
+  - clusterpolicies
+  - clusterpolicies/status
+  - policyexceptions
+  - cleanuppolicies
+  - clustercleanuppolicies
+  - generaterequests
+  - generaterequests/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["wgpolicyk8s.io"]
+  resources:
+  - policyreports
+  - policyreports/status
+  - clusterpolicyreports
+  - clusterpolicyreports/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["policy.kubernetes.io"]
+  resources:
+  - reportchangerequests
+  - reportchangerequests/status
+  - clusterreportchangerequests
+  - clusterreportchangerequests/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["security.nirmata.io"]
+  resources:
+  - imagekeys
+  - imagekeys/status
+  - kyvernoes
+  - kyvernoes/status
+  - policysets
+  - policysets/status
+  - kyvernooperators
+  - kyvernooperators/status
+  - kyvernoconfigs
+  - kyvernoconfigs/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/metrics
+  - componentstatuses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["apps"]
+  resources:
+  - deployments
+  resourceNames:
+  - nirmata-kube-controller
+  verbs:
+  - get
+  - list
+  - watch
+{{- if $peEnabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nirmata:policy-exceptions
+rules:
+- apiGroups: ["kyverno.io"]
+  resources:
+  - policyexceptions
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nirmata:policy-exceptions-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nirmata:policy-exceptions
+subjects:
+- kind: ServiceAccount
+  name: nirmata
+  namespace: {{ .Values.namespace }}
+{{- end }}
+{{- if $psEnabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nirmata:policy-sets
+rules:
+- apiGroups: ["security.nirmata.io"]
+  resources:
+  - policysets
+  - policysets/status
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups: ["kyverno.io", "operator.kyverno.io"]
+  resources:
+  - policies
+  - policies/status
+  - clusterpolicies
+  - clusterpolicies/status
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nirmata:policy-sets-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nirmata:policy-sets
+subjects:
+- kind: ServiceAccount
+  name: nirmata
+  namespace: {{ .Values.namespace }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nirmata-kube-controller-config
+  namespace: {{ .Values.namespace }}
+data:
+  WatchedResources: |-
+    events.v1.
+    policies.v1.kyverno.io
+    clusterpolicies.v1.kyverno.io
+    policyexceptions.v2alpha1.kyverno.io
+    policyexceptions.v2beta1.kyverno.io
+    policyexceptions.v2.kyverno.io
+    policysets.v1alpha1.security.nirmata.io
+  IgnoreEvents: Normal.PolicyPlaceHolder.*
+  FilterPatches: |-
+    /metadata/resourceVersion
+    /metadata/generation
+    /results/*/timestamp/*
+  IgnoreFields: metadata.managedFields
+  FilterEvents: Warning.PolicyViolation.*,Normal.PolicySkipped.*,Normal.PolicyModified.*,Normal.PolicyDeleted.*,Normal.PolicyApplied.Resource\
+    \ Generated.*,Normal.PolicyApplied.Resource Mutated.*,Normal.PolicyTamperDetected.*,Normal.PolicyTamperReverted.*
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nirmata-kube-controller
+  namespace: nirmata
+  annotations:
+    nirmata.io/namespace: {{ .Values.namespace | quote }}
+    nirmata.io/cluster-name: {{ .Values.cluster.name | quote }}
+    nirmata.io/helm: {{ $values := deepCopy .Values }}{{ if not (hasKey $values "features") }}{{ $_ := set $values "features" dict }}{{ end }}{{ if not (hasKey $values.features "policyExceptions") }}{{ $_ := set $values.features "policyExceptions" dict }}{{ end }}{{ if not (hasKey $values.features "policySets") }}{{ $_ := set $values.features "policySets" dict }}{{ end }}{{ $_ := set $values.features.policyExceptions "enabled" $peEnabled }}{{ $_ := set $values.features.policySets "enabled" $psEnabled }}{{ toJson $values | quote }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nirmata-kube-controller
+      nirmata.io/container.type: system
+      app.kubernetes.io/name: nirmata
+      app.kubernetes.io/instance: nirmata
+  template:
+    metadata:
+      labels:
+        app: nirmata-kube-controller
+        nirmata.io/container.type: system
+        app.kubernetes.io/name: nirmata
+        app.kubernetes.io/instance: nirmata
+    spec:
+      containers:
+      - args:
+        - -url
+        - $(URL)
+        - -event-aggregation
+        - -upstream-connect-fail-timeout
+        - 10m
+        - -cluster-name
+        - {{ .Values.cluster.name }}
+        {{ range $key, $value := .Values.cluster.labels }}
+        - "-cluster-labels"
+        - "{{ $key }}:{{ $value }}"
+        {{ end }}
+        - -api-token-secret
+        - {{ .Values.apiTokenSecret }}
+        - -onboarding-token
+        - {{ .Values.clusterOnboardingToken }}
+        {{- if .Values.kubeController.insecure }}
+        - -insecure
+        {{- end }}
+        {{- if .Values.isNpmOnly }}
+        - -gatewayUrl
+        - {{ .Values.nirmataURL | default "wss://nirmata.io/tunnels" | replace "/tunnels" "/gateway-service" }}
+        {{- end }}
+        env:
+        - name: URL
+          value: {{ default "wss://nirmata.io/tunnels" .Values.nirmataURL }}
+        {{- if and .Values.proxy.httpProxy .Values.proxy.httpsProxy .Values.proxy.noProxy }}
+        - name: HTTP_PROXY
+          value: {{ .Values.proxy.httpProxy }}
+        - name: HTTPS_PROXY
+          value: {{ .Values.proxy.httpsProxy }}
+        - name: NO_PROXY
+          value: {{ .Values.proxy.noProxy }}
+        {{- end }}
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imageRepository }}/nirmata-kube-controller:{{ .Values.kubeController.imageTag | default .Chart.AppVersion }}"
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        name: nirmata-kube-controller
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: {{ .Values.kubeController.resources.limits.cpu }}
+            memory: {{ .Values.kubeController.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.kubeController.resources.requests.cpu }}
+            memory: {{ .Values.kubeController.resources.requests.memory }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        {{- if or .Values.kubeController.customCACert .Values.kubeController.customCaConfigMap }}
+        volumeMounts:
+        - name: ca-cert
+          mountPath: /etc/ssl/certs/ca.crt
+          subPath: ca.crt
+          readOnly: true
+        {{- end }}
+      hostNetwork: false
+      imagePullSecrets:
+      - name: {{ default "nirmata-controller-registry-secret" .Values.global.imagePullSecretName }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: nirmata
+      {{- if or .Values.kubeController.customCACert .Values.kubeController.customCaConfigMap }}
+      volumes:
+      - name: ca-cert
+        configMap:
+          name: {{ if .Values.kubeController.customCaConfigMap }}{{ .Values.kubeController.customCaConfigMap }}{{ else }}nirmata-ca-cert{{ end }}
+      {{- end }}
+      {{- if .Values.kubeController.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.kubeController.nodeSelector | nindent 8 }}
+      {{- end }}
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      {{- with .Values.kubeController.tolerations }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-agent-config
+  namespace: {{ .Values.namespace }}
+data:
+  config.yaml: |-
+    receivers:
+      prometheus:
+        config:
+          scrape_configs:
+          - job_name: kyverno
+            scrape_interval: 5m
+            static_configs:
+            - targets: [kyverno-svc-metrics.kyverno.svc.cluster.local:8000]
+            metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: (kyverno_http_requests_duration_seconds_bucket.*|kyverno_policy_execution_duration_seconds_bucket.*|kyverno_client_queries_total.*|kyverno_admission_review_duration_seconds.*|kyverno_policy_execution_duration_seconds.*|kyverno_policy_results_total|kyverno_policy_rule_info_total|kyverno_admission_requests_total|kyverno_controller_reconcile_total|kyverno_controller_requeue_total|kyverno_controller_drop_total)
+              action: keep
+          - job_name: kubelet
+            scrape_interval: 5m
+            scheme: https
+            tls_config:
+              insecure_skip_verify: true
+            bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            kubernetes_sd_configs:
+            - role: node
+            relabel_configs:
+            - source_labels: [__meta_kubernetes_node_name]
+              target_label: instance
+            metrics_path: /metrics/cadvisor
+            metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: (container_memory_usage_bytes.*|container_cpu_usage_seconds_total)
+              action: keep
+          - job_name: 'kyverno-operator'
+            scrape_interval: 5m
+            kubernetes_sd_configs:
+              - role: pod
+                namespaces:
+                  names:
+                    - nirmata-system
+            relabel_configs:
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                action: keep
+                regex: true
+              - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+                action: keep
+                regex: nirmata-kyverno-operator
+              - source_labels: [__address__]
+                action: keep
+                regex: .*:8080$
+              - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                action: replace
+                target_label: __metrics_path__
+                regex: (kyverno_.*)
+    exporters:
+      prometheusremotewrite:
+        endpoint: https://{{ include "controller.metricsEndpointDomain" . }}{{ if .Values.isNpmOnly }}/gateway-service{{ else }}/host-gateway{{ end }}/metrics-receiver
+        remote_write_queue:
+          queue_size: 2000
+          num_consumers: 1
+        timeout: 300s
+    service:
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          exporters: [prometheusremotewrite]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-agent
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: opentelemetry
+    component: otel-agent
+    app.kubernetes.io/instance: nirmata
+    app.kubernetes.io/name: nirmata
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-agent
+      app.kubernetes.io/instance: nirmata
+      app.kubernetes.io/name: nirmata
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-agent
+        app.kubernetes.io/instance: nirmata
+        app.kubernetes.io/name: nirmata
+    spec:
+      initContainers:
+      - name: wait-for-tenantid
+        image: {{ .Values.otelAgent.kubectlImage }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Waiting for external_labels.tenantId in ConfigMap..."
+          # Configure kubectl to use service account token
+          export KUBECONFIG=/tmp/kubeconfig
+          kubectl config set-cluster default --server=https://kubernetes.default.svc --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          kubectl config set-credentials default --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+          kubectl config set-context default --cluster=default --user=default
+          kubectl config use-context default
+          
+          while true; do
+            config=$(kubectl get configmap otel-agent-config -n {{ .Values.namespace }} -o jsonpath='{.data.config\.yaml}')
+            echo "$config" | grep -q "external_labels:" && echo "$config" | grep -q "tenantId:"
+            if [ $? -eq 0 ]; then
+              echo "Found external_labels and tenantId!"
+              break
+            fi
+            echo "Not found yet, sleeping..."
+            sleep 5
+          done
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: false
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+      serviceAccountName: nirmata
+      serviceAccount: nirmata
+      containers:
+      - name: otel-agent
+        command:
+        - /otelcol-contrib
+        - --config=/etc/otel/config.yaml
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imageRepository }}/opentelemetry-collector:{{ .Values.otelAgent.imageTag }}"
+        resources:
+          limits:
+            cpu: {{ .Values.otelAgent.resources.limits.cpu }}
+            memory: {{ .Values.otelAgent.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.otelAgent.resources.requests.cpu }}
+            memory: {{ .Values.otelAgent.resources.requests.memory }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 8888
+            scheme: HTTP
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 8888
+            scheme: HTTP
+        volumeMounts:
+        - mountPath: /etc/otel/config.yaml
+          name: data
+          subPath: config.yaml
+          readOnly: true
+        {{- if or .Values.kubeController.customCACert .Values.kubeController.customCaConfigMap }}
+        - name: ca-cert
+          mountPath: /etc/ssl/certs/ca.crt
+          subPath: ca.crt
+          readOnly: true
+        {{- end }}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: data
+        configMap:
+          name: otel-agent-config
+      - name: tmp-volume
+        emptyDir: {}
+      {{- if or .Values.kubeController.customCACert .Values.kubeController.customCaConfigMap }}
+      - name: ca-cert
+        configMap:
+          name: {{ if .Values.kubeController.customCaConfigMap }}{{ .Values.kubeController.customCaConfigMap }}{{ else }}nirmata-ca-cert{{ end }}
+      {{- end }}
+      imagePullSecrets:
+      - name: {{ default "nirmata-controller-registry-secret" .Values.global.imagePullSecretName }}
+      {{- if .Values.otelAgent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.otelAgent.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.otelAgent.tolerations }}
+      tolerations:
+        {{- toYaml .Values.otelAgent.tolerations | nindent 6 }}
+      {{- end }}
