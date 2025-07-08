@@ -157,14 +157,10 @@ pdb:
   maxUnavailable: 50%
 
 # -- Node selector
-nodeSelector: 
-  Name: kyverno
+nodeSelector: {}
+
 # -- Tolerations
-tolerations: 
-  - key: Name
-    operator: Equal
-    value: kyverno
-    effect: NoSchedule 
+tolerations: []
 
 # -- Affinity
 affinity: {}
@@ -190,7 +186,7 @@ config:
     # -- Image pull secrets
     imagePullSecrets: []
 
-    enabled: false
+    enabled: true
     endpoints: ~
     insecure: true
     # PVC Storage configuration for etcd persistence:
@@ -208,17 +204,12 @@ config:
     ## @param nodeSelector [object] Node labels for pod assignment
     ## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
     ##
-    nodeSelector: 
-      Name: kyverno
+    nodeSelector: {}
 
     ## @param tolerations [array] Tolerations for pod assignment
     ## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
     ##
-    tolerations: 
-    - key: Name
-      operator: Equal
-      value: kyverno
-      effect: NoSchedule 
+    tolerations: []
 
   db:
 
@@ -314,15 +305,10 @@ jobConfigurations:
   podSecurityContext: {}
 
   # -- Node labels for pod assignment
-  nodeSelector: 
-    Name: kyverno
+  nodeSelector: {}
 
   # -- List of node taints to tolerate
-  tolerations: 
-  - key: Name
-    operator: Equal
-    value: kyverno
-    effect: NoSchedule 
+  tolerations: []
 
   # -- Pod anti affinity constraints.
   podAntiAffinity: {}
