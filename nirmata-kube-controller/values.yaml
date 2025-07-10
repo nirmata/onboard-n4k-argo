@@ -105,7 +105,7 @@ kubeController:
 # cluster contains configuration related to the Kubernetes cluster which is being onboarded to NCH.
 cluster:
 # name used for cluster by nch (Default: kubesystem namespace ID)
-  name: "pt-cluster"
+  name: ""
 
 # type of the cluster categorised by nch. (Default value is "default-policy-manager-type")
   type: default-policy-manager-type
@@ -127,9 +127,9 @@ cluster:
 
 # api token is just for registering the cluster to Nirmata Control Hub.
 # This token is required for the nirmata-kube-controller to communicate with the Nirmata Control Hub. (Required)
-apiToken: "9b537nRh7Q4l4QJ4zyd//FDpzA2zaRRpTnm+/c75E1RHR+NOCvsn58sUBa7SEP2CrViAwv5YlJ5otKNtEsODag=="
+apiToken: ""
 
-clusterOnboardingToken: "Njk1MDBlOTMtZmEwMy00Zjg0LTgyNTktZjA0ZTlkMzg0YjQ4"
+clusterOnboardingToken: ""
 
 # apiTokenSecret is the name of the secret containing the API token.
 apiTokenSecret: "nirmata-api-token"
