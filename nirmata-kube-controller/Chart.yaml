@@ -6,4 +6,4 @@ maintainers:
   url: https://nirmata.com/
 name: nirmata-kube-controller
 type: application
-version: 0.3.3
+version: 0.3.5

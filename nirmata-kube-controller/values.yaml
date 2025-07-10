@@ -44,7 +44,7 @@ otelAgent:
   # imageTag is the tag or version of the otel-agent image.
   imageTag: "0.108.0"
 
-  kubectlImage: "ghcr.io/nirmata/kubectl:1.31"
+  kubectlImage: "ghcr.io/nirmata/kubectl:1.33.1"
   # resources defines the resource requests and limits for the otel-agent
   resources:
     requests:
@@ -105,7 +105,7 @@ kubeController:
 # cluster contains configuration related to the Kubernetes cluster which is being onboarded to NCH.
 cluster:
 # name used for cluster by nch (Default: kubesystem namespace ID)
-  name: "ds"
+  name: "pt-cluster"
 
 # type of the cluster categorised by nch. (Default value is "default-policy-manager-type")
   type: default-policy-manager-type
@@ -127,9 +127,9 @@ cluster:
 
 # api token is just for registering the cluster to Nirmata Control Hub.
 # This token is required for the nirmata-kube-controller to communicate with the Nirmata Control Hub. (Required)
-apiToken: ""
+apiToken: "9b537nRh7Q4l4QJ4zyd//FDpzA2zaRRpTnm+/c75E1RHR+NOCvsn58sUBa7SEP2CrViAwv5YlJ5otKNtEsODag=="
 
-clusterOnboardingToken: ""
+clusterOnboardingToken: "Njk1MDBlOTMtZmEwMy00Zjg0LTgyNTktZjA0ZTlkMzg0YjQ4"
 
 # apiTokenSecret is the name of the secret containing the API token.
 apiTokenSecret: "nirmata-api-token"
