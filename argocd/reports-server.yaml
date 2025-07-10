@@ -56,6 +56,11 @@ spec:
         - /spec/template/spec
         - /metadata/annotations
         - /metadata/labels
+        - /spec/volumeClaimTemplates
+        - /spec/revisionHistoryLimit
+        - /spec/updateStrategy
+        - /spec/persistentVolumeClaimRetentionPolicy
+        - /status
     - group: batch
       kind: Job
       name: reports-server-post-install-install-api-services
