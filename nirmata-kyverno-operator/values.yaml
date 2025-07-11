@@ -45,7 +45,7 @@ enableWebhook: true
 secureOperator: true
 kyvernoDeployment: kyverno-admission-controller
 kyvernoNamespace: kyverno
-enablePolicyset: false
+enablePolicyset: true
 
 preventPolicyTamper: true
 
