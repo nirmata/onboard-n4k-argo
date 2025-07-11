@@ -105,7 +105,7 @@ kubeController:
 # cluster contains configuration related to the Kubernetes cluster which is being onboarded to NCH.
 cluster:
 # name used for cluster by nch (Default: kubesystem namespace ID)
-  name: "pt"
+  name: "final-test-new-aws-cluster"
 
 # type of the cluster categorised by nch. (Default value is "default-policy-manager-type")
   type: default-policy-manager-type
