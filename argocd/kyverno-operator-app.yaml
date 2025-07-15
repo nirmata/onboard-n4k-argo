@@ -43,4 +43,11 @@ spec:
       kind: KyvernoConfig
       namespace: nirmata-system
       jsonPointers:
+        - /metadata/annotations
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: kyverno-operator-validating-webhook-configuration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
+        - /webhooks/1/clientConfig/caBundle
         - /metadata/annotations 
