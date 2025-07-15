@@ -38,4 +38,9 @@ spec:
       jsonPointers:
         - /data
         - /metadata/resourceVersion
+        - /metadata/annotations
+    - group: operator.nirmata.io
+      kind: kyvernoConfig
+      namespace: nirmata-system
+      jsonPointers:
         - /metadata/annotations 
