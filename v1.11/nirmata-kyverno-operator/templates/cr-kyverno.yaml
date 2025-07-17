@@ -1,0 +1,22 @@
+{{- if .Values.kyverno.createCR }}
+apiVersion: security.nirmata.io/v1alpha1
+kind: KyvernoConfig
+metadata:
+  annotations:
+    {{- if .Values.globalAnnotations }}
+    {{- toYaml .Values.globalAnnotations | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "enterprise-kyverno.labels" . | nindent 4 }}
+  name: kyverno
+  namespace: {{ template "enterprise-kyverno.namespace" . }}
+spec:
+  namespace: {{ include "kyverno.namespace" . }}
+  repository: {{ .Values.kyverno.image.repository }}
+  version: {{ .Values.kyverno.image.tag }}
+  replicas: {{ include "enterprise-kyverno.kyvernoReplicas" . }}
+
+  helm:
+    values:
+    {{- include "enterprise-kyverno.combinedKyveroHelm" . | nindent 6 }}
+{{- end }}

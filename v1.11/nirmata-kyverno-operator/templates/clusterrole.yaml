@@ -1,0 +1,127 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "enterprise-kyverno.fullname" . }}
+  labels:
+    {{- if .Values.globalLabels }}
+    {{- toYaml .Values.globalLabels | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.globalAnnotations }}
+    {{- toYaml .Values.globalAnnotations | nindent 4 }}
+    {{- end }}
+rules:
+- apiGroups:
+  - "security.nirmata.io"
+  resources:
+  - kyvernoconfigs
+  - kyvernoconfigs/status
+  - policysets
+  - policysets/status
+  - kyvernoadapters
+  - kyvernoadapters/status
+  verbs:
+  - watch
+  - list
+  - get
+  - create
+  - update
+  - delete
+- apiGroups:
+  - security.nirmata.io
+  resources:
+  - kyvernoconfigs/finalizers
+  - policysets/finalizers
+  - kyvernoadapters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+  {{- if eq .Values.certManager "operator" }}
+  - update
+  {{- end}}
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments/status
+  verbs:
+  - get
+- apiGroups:
+  - batch
+  - extensions
+  resources:
+  - cronjobs
+  - jobs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - batch/v1
+  resources:
+  - cronjobs/status
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - services/status
+  verbs:
+  - get
+- apiGroups:
+  - kyverno.io
+  resources:
+  - clusterpolicies
+  - policies
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - security.nirmata.io
+  resources:
+  - awsadapterconfigs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+{{- end }}
