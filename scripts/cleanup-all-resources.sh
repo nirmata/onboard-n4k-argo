@@ -61,7 +61,7 @@ safe_delete() {
 delete_argocd_apps() {
     print_step "Deleting ArgoCD Applications..."
     
-    local apps=("kyverno" "nirmata-kyverno-operator" "nirmata-kube-controller" "reports-server")
+    local apps=("kyverno" "kyverno-operator" "nirmata-kube-controller" "reports-server")
     
     for app in "${apps[@]}"; do
         if kubectl get application "$app" -n argocd &> /dev/null; then
