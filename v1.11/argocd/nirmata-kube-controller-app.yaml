@@ -24,6 +24,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
     retry:
       limit: 10
       backoff:
@@ -36,4 +37,21 @@ spec:
     name: otel-agent-config
     namespace: nirmata
     jsonPointers:
-    - /data/config.yaml 
+    - /data/config.yaml
+    - /metadata/annotations
+    - /metadata/resourceVersion
+  - group: apps
+    kind: Deployment
+    namespace: nirmata
+    jsonPointers:
+    - /metadata/annotations
+    - /metadata/resourceVersion
+    - /metadata/generation
+    - /status
+  - group: ""
+    kind: ServiceAccount
+    namespace: nirmata
+    jsonPointers:
+    - /metadata/annotations
+    - /metadata/resourceVersion
+    - /secrets

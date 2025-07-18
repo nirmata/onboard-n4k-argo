@@ -24,6 +24,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
     retry:
       limit: 10
       backoff:
@@ -47,10 +48,53 @@ spec:
       namespace: nirmata-system
       jsonPointers:
         - /metadata/annotations
+        - /metadata/resourceVersion
+        - /metadata/generation
+        - /status
+    - group: security.nirmata.io
+      kind: PolicySet
+      namespace: nirmata-system
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/resourceVersion
+        - /metadata/generation
+        - /status
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
       name: kyverno-operator-validating-webhook-configuration
       jsonPointers:
         - /webhooks/0/clientConfig/caBundle
         - /webhooks/1/clientConfig/caBundle
-        - /metadata/annotations 
+        - /metadata/annotations
+        - /metadata/resourceVersion
+        - /metadata/generation
+    - group: apps
+      kind: Deployment
+      namespace: nirmata-system
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/resourceVersion
+        - /metadata/generation
+        - /status
+    - group: apps
+      kind: Deployment
+      namespace: kyverno
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/resourceVersion
+        - /metadata/generation
+        - /status
+    - group: ""
+      kind: ServiceAccount
+      namespace: nirmata-system
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/resourceVersion
+        - /secrets
+    - group: ""
+      kind: ServiceAccount
+      namespace: kyverno
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/resourceVersion
+        - /secrets
