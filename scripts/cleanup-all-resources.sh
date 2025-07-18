@@ -87,8 +87,21 @@ delete_crds_and_resources() {
     
     # Delete Kyverno policy resources first
     print_info "Deleting Kyverno policy resources..."
+    
+    # Remove finalizers from cluster policies
+    for policy in $(kubectl get clusterpolicies -o name 2>/dev/null || true); do
+        kubectl patch "$policy" --type='merge' -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+    done
     kubectl delete clusterpolicies --all --ignore-not-found=true --timeout=60s || true
+    
+    # Remove finalizers from namespaced policies
+    for ns in $(kubectl get namespaces -o name | cut -d/ -f2); do
+        for policy in $(kubectl get policies -n "$ns" -o name 2>/dev/null || true); do
+            kubectl patch "$policy" -n "$ns" --type='merge' -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+        done
+    done
     kubectl delete policies --all --all-namespaces --ignore-not-found=true --timeout=60s || true
+    
     kubectl delete cleanuppolicies --all --all-namespaces --ignore-not-found=true --timeout=60s || true
     kubectl delete clustercleanuppolicies --all --ignore-not-found=true --timeout=60s || true
     kubectl delete policyexceptions --all --all-namespaces --ignore-not-found=true --timeout=60s || true
@@ -104,8 +117,26 @@ delete_crds_and_resources() {
     
     # Delete Nirmata custom resources
     print_info "Deleting Nirmata custom resources..."
+    
+    # Remove finalizers from KyvernoConfigs before deletion
+    for ns in $(kubectl get namespaces -o name | cut -d/ -f2); do
+        for config in $(kubectl get kyvernoconfigs -n "$ns" -o name 2>/dev/null || true); do
+            kubectl patch "$config" -n "$ns" --type='merge' -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+        done
+    done
     kubectl delete kyvernoconfigs --all --all-namespaces --ignore-not-found=true --timeout=60s || true
+    
+    # Remove finalizers from PolicySets before deletion
+    for ns in $(kubectl get namespaces -o name | cut -d/ -f2); do
+        for policyset in $(kubectl get policysets -n "$ns" -o name 2>/dev/null || true); do
+            kubectl patch "$policyset" -n "$ns" --type='merge' -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+        done
+    done
     kubectl delete policysets --all --all-namespaces --ignore-not-found=true --timeout=60s || true
+    
+    # Wait for custom resources to be fully deleted before removing CRDs
+    print_info "Waiting for custom resources to be cleaned up..."
+    sleep 15
     
     # Delete CRDs
     print_info "Deleting CRDs..."
@@ -126,6 +157,10 @@ delete_crds_and_resources() {
     )
     
     for crd in "${crds[@]}"; do
+        if kubectl get crd "$crd" &> /dev/null; then
+            print_info "Removing finalizers from CRD: $crd"
+            kubectl patch crd "$crd" --type='merge' -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+        fi
         safe_delete "crd" "$crd"
     done
 }
@@ -165,6 +200,18 @@ delete_cluster_resources() {
         "kyverno:background-controller:additional"
         "kyverno:cleanup-controller:additional"
         "kyverno:reports-controller:additional"
+        "kyverno:admission-controller:view"
+        "kyverno:background-controller:view"
+        "kyverno:reports-controller:view"
+        "kyverno:rbac:admin:policies"
+        "kyverno:rbac:admin:policyreports"
+        "kyverno:rbac:admin:reports"
+        "kyverno:rbac:admin:updaterequests"
+        "kyverno:rbac:view:policies"
+        "kyverno:rbac:view:policyreports"
+        "kyverno:rbac:view:reports"
+        "kyverno:rbac:view:updaterequests"
+        "kyverno-operator"
         "nirmata-kyverno-operator"
         "nirmata:readonly"
         "nirmata:policy-exceptions"

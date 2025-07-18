@@ -167,17 +167,39 @@ delete_cluster_resources() {
     )
     
     for webhook in "${webhook_configs[@]}"; do
-        safe_delete "validatingwebhookconfiguration" "$webhook"
+        print_info "Deleting validatingwebhookconfiguration/$webhook"
+        # Remove finalizers first
+        kubectl patch validatingwebhookconfiguration "$webhook" --type='merge' -p='{"metadata":{"finalizers":[]}}' &>/dev/null || true
+        # Then delete
+        kubectl delete validatingwebhookconfiguration "$webhook" --ignore-not-found=true --timeout=60s || true
     done
     
     for webhook in "${mutating_webhook_configs[@]}"; do
-        safe_delete "mutatingwebhookconfiguration" "$webhook"
+        print_info "Deleting mutatingwebhookconfiguration/$webhook"
+        # Remove finalizers first
+        kubectl patch mutatingwebhookconfiguration "$webhook" --type='merge' -p='{"metadata":{"finalizers":[]}}' &>/dev/null || true
+        # Then delete
+        kubectl delete mutatingwebhookconfiguration "$webhook" --ignore-not-found=true --timeout=60s || true
     done
     
-    # Clean up any remaining kyverno webhook configurations
+    # Clean up any remaining kyverno webhook configurations with finalizer removal
     print_info "Cleaning up any remaining Kyverno webhook configurations..."
-    kubectl get validatingwebhookconfigurations -o name | grep kyverno | xargs -r kubectl delete --ignore-not-found=true --timeout=60s || true
-    kubectl get mutatingwebhookconfigurations -o name | grep kyverno | xargs -r kubectl delete --ignore-not-found=true --timeout=60s || true
+    
+    # Get remaining validating webhooks and remove them
+    kubectl get validatingwebhookconfigurations -o name 2>/dev/null | grep kyverno | while read -r webhook; do
+        webhook_name=$(echo "$webhook" | cut -d'/' -f2)
+        print_info "Removing finalizers and deleting $webhook"
+        kubectl patch validatingwebhookconfiguration "$webhook_name" --type='merge' -p='{"metadata":{"finalizers":[]}}' &>/dev/null || true
+        kubectl delete validatingwebhookconfiguration "$webhook_name" --ignore-not-found=true --timeout=60s || true
+    done
+    
+    # Get remaining mutating webhooks and remove them
+    kubectl get mutatingwebhookconfigurations -o name 2>/dev/null | grep kyverno | while read -r webhook; do
+        webhook_name=$(echo "$webhook" | cut -d'/' -f2)
+        print_info "Removing finalizers and deleting $webhook"
+        kubectl patch mutatingwebhookconfiguration "$webhook_name" --type='merge' -p='{"metadata":{"finalizers":[]}}' &>/dev/null || true
+        kubectl delete mutatingwebhookconfiguration "$webhook_name" --ignore-not-found=true --timeout=60s || true
+    done
     
     # Delete FlowSchemas and PriorityLevelConfigurations
     print_info "Deleting FlowSchemas and PriorityLevelConfigurations..."
