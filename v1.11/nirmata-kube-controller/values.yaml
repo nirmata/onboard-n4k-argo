@@ -23,7 +23,7 @@ cluster:
 #   apiKey: UWd4ZWVKTzZhR0Q0RWVBWU1uVW5oaTdIM3pSR3lkMVJuR2dKMDlQR0dDWnk4WUUvZ0diM3ZsVFQ0aDBUNE12L0MxenNWcHhseksxalNtdHMrOXNLdENVNXZ3U3c5Rlo2T1pCaXZkNEJXazQ9
 
 #apiTokenSecret: "nirmata-api-token"
-apiToken: "9b537nRh7Q4l4QJ4zyd//FDpzA2zaRRpTnm+/c75E1RHR+NOCvsn58sUBa7SEP2CrViAwv5YlJ5otKNtEsODag==""
+apiToken: "9b537nRh7Q4l4QJ4zyd//FDpzA2zaRRpTnm+/c75E1RHR+NOCvsn58sUBa7SEP2CrViAwv5YlJ5otKNtEsODag=="
 
 proxy:
   httpProxy: ""
