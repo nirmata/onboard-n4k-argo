@@ -45,7 +45,7 @@ enableWebhook: true
 secureOperator: true
 kyvernoDeployment: kyverno-admission-controller
 kyvernoNamespace: kyverno
-enablePolicyset: true
+enablePolicyset: false
 
 preventPolicyTamper: true
 
@@ -100,7 +100,7 @@ kyverno:
           - watch
   templating:
     enabled: false
-    image: ghcr.io/nirmata/kubectl:1.31.1
+    image: ghcr.io/nirmata/kubectl:1.33.2
     version: ~
   customNamespaces: false
   webhooksCleanup:
