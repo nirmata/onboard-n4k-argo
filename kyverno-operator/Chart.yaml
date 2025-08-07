@@ -19,4 +19,4 @@ maintainers:
   url: https://nirmata.com/
 name: nirmata-kyverno-operator
 type: application
-version: 0.8.5
+version: 0.8.6
