@@ -125,6 +125,17 @@ delete_crds_and_resources() {
         "policysets.security.nirmata.io"
     )
     
+    # First pass: Clear finalizers from CRDs that might be stuck
+    print_info "Clearing finalizers from CRDs..."
+    for crd in "${crds[@]}"; do
+        if kubectl get crd "$crd" &> /dev/null; then
+            print_info "Clearing finalizers from CRD: $crd"
+            kubectl patch crd "$crd" --type='merge' -p='{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+        fi
+    done
+    
+    # Second pass: Delete CRDs
+    print_info "Deleting CRDs after finalizer removal..."
     for crd in "${crds[@]}"; do
         safe_delete "crd" "$crd"
     done
@@ -165,7 +176,20 @@ delete_cluster_resources() {
         "kyverno:background-controller:additional"
         "kyverno:cleanup-controller:additional"
         "kyverno:reports-controller:additional"
+        "kyverno:admission-controller:view"
+        "kyverno:background-controller:view"
+        "kyverno:cleanup-controller:view"
+        "kyverno:reports-controller:view"
+        "kyverno:rbac:admin:policies"
+        "kyverno:rbac:admin:policyreports"
+        "kyverno:rbac:admin:reports"
+        "kyverno:rbac:admin:updaterequests"
+        "kyverno:rbac:view:policies"
+        "kyverno:rbac:view:policyreports"
+        "kyverno:rbac:view:reports"
+        "kyverno:rbac:view:updaterequests"
         "nirmata-kyverno-operator"
+        "kyverno-operator"
         "nirmata:readonly"
         "nirmata:policy-exceptions"
         "nirmata:policy-sets"
@@ -181,6 +205,21 @@ delete_cluster_resources() {
     safe_delete "clusterrolebinding" "nirmata:readonly-binding"
     safe_delete "clusterrolebinding" "nirmata:policy-exceptions-binding"
     safe_delete "clusterrolebinding" "nirmata:policy-sets-binding"
+    
+    # Clean up any remaining Kyverno/Nirmata cluster resources by pattern
+    print_info "Cleaning up any remaining Kyverno/Nirmata cluster resources..."
+    
+    # Get and delete any remaining ClusterRoles with kyverno or nirmata in the name
+    if kubectl get clusterroles -o name | grep -E "(kyverno|nirmata)" &> /dev/null; then
+        print_info "Found additional ClusterRoles to clean up"
+        kubectl get clusterroles -o name | grep -E "(kyverno|nirmata)" | xargs -r kubectl delete --ignore-not-found=true --timeout=60s || true
+    fi
+    
+    # Get and delete any remaining ClusterRoleBindings with kyverno or nirmata in the name
+    if kubectl get clusterrolebindings -o name | grep -E "(kyverno|nirmata)" &> /dev/null; then
+        print_info "Found additional ClusterRoleBindings to clean up"
+        kubectl get clusterrolebindings -o name | grep -E "(kyverno|nirmata)" | xargs -r kubectl delete --ignore-not-found=true --timeout=60s || true
+    fi
 }
 
 # Function to delete namespaced resources
@@ -414,12 +453,57 @@ main() {
     echo
     print_info "Cleanup completed!"
     echo
-    print_info "You may want to verify that all resources have been deleted:"
+    print_info "Verifying cleanup..."
+    
+    # Check for remaining resources
+    echo
+    print_info "Checking for remaining CRDs..."
+    if kubectl get crd | grep -E '(kyverno|nirmata)' 2>/dev/null; then
+        print_warning "Found remaining CRDs above"
+    else
+        print_info "✓ No remaining CRDs found"
+    fi
+    
+    echo
+    print_info "Checking for remaining ClusterRoles..."
+    if kubectl get clusterroles | grep -E '(kyverno|nirmata)' 2>/dev/null; then
+        print_warning "Found remaining ClusterRoles above"
+    else
+        print_info "✓ No remaining ClusterRoles found"
+    fi
+    
+    echo
+    print_info "Checking for remaining ClusterRoleBindings..."
+    if kubectl get clusterrolebindings | grep -E '(kyverno|nirmata)' 2>/dev/null; then
+        print_warning "Found remaining ClusterRoleBindings above"
+    else
+        print_info "✓ No remaining ClusterRoleBindings found"
+    fi
+    
+    echo
+    print_info "Checking for remaining ArgoCD applications..."
+    if kubectl get applications -n argocd 2>/dev/null | grep -E '(kyverno|nirmata)'; then
+        print_warning "Found remaining ArgoCD applications above"
+    else
+        print_info "✓ No remaining ArgoCD applications found"
+    fi
+    
+    echo
+    print_info "Checking for remaining namespaces..."
+    if kubectl get namespaces | grep -E '(kyverno|nirmata)' 2>/dev/null; then
+        print_warning "Found remaining namespaces above"
+    else
+        print_info "✓ No remaining namespaces found"
+    fi
+    
+    echo
+    print_info "Manual verification commands (if needed):"
     echo "  kubectl get all --all-namespaces | grep -E '(kyverno|nirmata)'"
     echo "  kubectl get crd | grep -E '(kyverno|nirmata)'"
     echo "  kubectl get clusterroles | grep -E '(kyverno|nirmata)'"
     echo "  kubectl get clusterrolebindings | grep -E '(kyverno|nirmata)'"
-    echo "  kubectl get applications -n argocd"
+    echo "  kubectl get applications -n argocd | grep -E '(kyverno|nirmata)'"
+    echo "  kubectl get namespaces | grep -E '(kyverno|nirmata)'"
 }
 
 # Run main function
