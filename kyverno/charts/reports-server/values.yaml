@@ -122,11 +122,11 @@ metrics:
 resources:
   # -- Container resource limits
   limits:
-    memory: 2048Mi
+    memory: 128Mi
   # -- Container resource requests
   requests:
     cpu: 100m
-    memory: 128Mi
+    memory: 64Mi
 
 autoscaling:
   # -- Enable autoscaling
@@ -211,12 +211,12 @@ config:
     # - Override: Set a custom storage size (e.g., "2Gi", "5Gi") as needed.
     # - NOTE: keep this **10‑20 % greater** than `quotaBackendBytes`
     # This value defines the size of the persistent volume claim (PVC) for etcd.
-    storage: 8Gi
+    storage: 2Gi
 
   # Quota for etcd's internal database (BoltDB) **in bytes**
   # - What it limits: the logical size of the etcd DB file, *not* the PVC.
   # - Format: plain integer bytes (no Ki/Mi/Gi suffix).
-    quotaBackendBytes: 8589934592
+    quotaBackendBytes: 1932735283
 
     # Auto-compaction configuration for etcd
     autoCompaction:
@@ -308,7 +308,7 @@ apiServicesManagement:
 
   migrateReportsServer:
     # -- Create api services only when reports-server is ready and migration is guaranteed
-    enabled: true
+    enabled: false
 
 
 jobConfigurations:
