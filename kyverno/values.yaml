@@ -468,7 +468,7 @@ test:
   resources:
     # -- Pod resource limits
     limits:
-      cpu: 100m
+    #  cpu: 100m
       memory: 256Mi
     # -- Pod resource requests
     requests:
@@ -986,7 +986,7 @@ admissionController:
     resources:
       # -- Pod resource limits
       limits:
-        cpu: 100m
+      #  cpu: 100m
         memory: 256Mi
       # -- Pod resource requests
       requests:
@@ -1032,11 +1032,11 @@ admissionController:
     resources:
       # -- Pod resource limits
       limits:
-        cpu: 1500m
+      #  cpu: 1500m
         memory: 2048Mi
       # -- Pod resource requests
       requests:
-        cpu: 100m
+        cpu: 10m
         memory: 128Mi
 
     # -- Container security context
@@ -1307,7 +1307,7 @@ backgroundController:
   resources:
     # -- Pod resource limits
     limits:
-      cpu: 1500m
+    #  cpu: 1500m
       memory: 2048Mi
     # -- Pod resource requests
     requests:
@@ -1584,7 +1584,7 @@ cleanupController:
   resources:
     # -- Pod resource limits
     limits:
-      cpu: 1500m
+    #  cpu: 1500m
       memory: 2048Mi
     # -- Pod resource requests
     requests:
@@ -1911,7 +1911,7 @@ reportsController:
   resources:
     # -- Pod resource limits
     limits:
-      cpu: 1500m
+    #  cpu: 1500m
       memory: 2048Mi
     # -- Pod resource requests
     requests:
