@@ -1036,7 +1036,7 @@ admissionController:
         memory: 2048Mi
       # -- Pod resource requests
       requests:
-        cpu: 10m
+        cpu: 250m
         memory: 128Mi
 
     # -- Container security context
