@@ -122,9 +122,7 @@ metrics:
 resources:
   # -- Container resource limits
   limits:
-    #cpu: 1000m
     memory: 2048Mi
-
   # -- Container resource requests
   requests:
     cpu: 100m
@@ -145,6 +143,25 @@ autoscaling:
 
   # -- Target Memory utilisation
   targetMemoryUtilizationPercentage: ~
+
+  # -- HPA behavior configuration (optional)
+  # behavior:
+  #   scaleDown:
+  #     stabilizationWindowSeconds: 300
+  #     policies:
+  #     - type: Percent
+  #       value: 100
+  #       periodSeconds: 15
+  #   scaleUp:
+  #     stabilizationWindowSeconds: 0
+  #     policies:
+  #     - type: Percent
+  #       value: 100
+  #       periodSeconds: 15
+  #     - type: Pods
+  #       value: 4
+  #       periodSeconds: 15
+  #     selectPolicy: Max
 
 
 # -- Using a PDB is highly recommended for highly available deployments. Defaults to enabled. The default configuration doesn't prevent disruption when using a single replica
@@ -192,14 +209,23 @@ config:
     # PVC Storage configuration for etcd persistence:
     # - Default: If not specified, the chart will allocate 2Gi of storage.
     # - Override: Set a custom storage size (e.g., "2Gi", "5Gi") as needed.
-    # - NOTE: keep this **10‑20 % greater** than `quotaBackendBytes`
+    # - NOTE: keep this **10‑20 % greater** than `quotaBackendBytes`
     # This value defines the size of the persistent volume claim (PVC) for etcd.
     storage: 8Gi
 
-  # Quota for etcd’s internal database (BoltDB) **in bytes**
+  # Quota for etcd's internal database (BoltDB) **in bytes**
   # - What it limits: the logical size of the etcd DB file, *not* the PVC.
   # - Format: plain integer bytes (no Ki/Mi/Gi suffix).
     quotaBackendBytes: 8589934592
+
+    # Auto-compaction configuration for etcd
+    autoCompaction:
+      # -- Enable auto-compaction for etcd
+      enabled: true
+      # -- Auto-compaction mode (periodic or revision)
+      mode: periodic
+      # -- Auto-compaction retention (e.g., 30m for 30 minutes, 1h for 1 hour)
+      retention: 30m
 
     ## @param nodeSelector [object] Node labels for pod assignment
     ## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/

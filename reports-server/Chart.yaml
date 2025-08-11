@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: v0.1.25
+appVersion: v0.2.2
 keywords:
 - kubernetes
 - policy reports storage
@@ -13,4 +13,4 @@ name: reports-server
 sources:
 - https://github.com/nirmata/reports-server
 type: application
-version: 0.2.0
+version: 0.2.3
