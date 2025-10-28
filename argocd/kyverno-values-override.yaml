@@ -1,0 +1,110 @@
+# Kyverno Values Override for ArgoCD
+# This file can be referenced in the ArgoCD Application spec to override default values
+# Uncomment and customize as needed for your environment
+
+# High Availability Configuration
+admissionController:
+  replicas: 3
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  
+  # Resources for production
+  container:
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 200m
+        memory: 256Mi
+
+backgroundController:
+  enabled: true
+  replicas: 2
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+cleanupController:
+  enabled: true
+  replicas: 2
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+reportsController:
+  enabled: true
+  replicas: 2
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Features Configuration
+features:
+  policyReports:
+    enabled: true
+  admissionReports:
+    enabled: true
+  backgroundScan:
+    enabled: true
+    backgroundScanWorkers: 4
+    backgroundScanInterval: 1h
+
+# Metrics and Monitoring
+admissionController:
+  serviceMonitor:
+    enabled: false  # Set to true if Prometheus Operator is installed
+    
+backgroundController:
+  serviceMonitor:
+    enabled: false
+
+cleanupController:
+  serviceMonitor:
+    enabled: false
+
+reportsController:
+  serviceMonitor:
+    enabled: false
+
+# Grafana Dashboard
+grafana:
+  enabled: false  # Set to true to create Grafana dashboards
+
+# Reports Server Configuration
+reports-server:
+  install: true
+  replicaCount: 1
+  
+  config:
+    db:
+      # Database configuration - update with your database details
+      host: postgres.default.svc.cluster.local
+      port: 5432
+      name: kyverno
+      user: kyverno
+      password: changeme
+      sslmode: disable
+    
+    etcd:
+      enabled: false  # Set to true if using etcd instead of PostgreSQL
+
+# Image Pull Secrets (if using private registries)
+# global:
+#   imagePullSecrets:
+#     - name: nirmata-registry-secret
+
+# Node Affinity and Tolerations
+# global:
+#   nodeSelector:
+#     kubernetes.io/os: linux
+#   tolerations:
+#     - key: node-role.kubernetes.io/control-plane
+#       operator: Exists
+#       effect: NoSchedule
+
+# Webhook Configuration for AKS
+# config:
+#   webhookAnnotations:
+#     admissions.enforcer/disabled: "true"
+

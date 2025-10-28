@@ -1,0 +1,12 @@
+dependencies:
+- name: grafana
+  repository: ""
+  version: 3.3.6
+- name: reports-server
+  repository: https://nirmata.github.io/kyverno-charts
+  version: 0.2.8-rc2
+- name: crds
+  repository: ""
+  version: 3.3.6
+digest: sha256:7b7790bb8980c39457f543cae19378215dc6194677aaf71e95dc4f49835c7424
+generated: "2025-10-26T12:59:57.732204964Z"

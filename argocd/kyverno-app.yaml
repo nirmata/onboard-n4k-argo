@@ -1,0 +1,126 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/nirmata/onboard-n4k-argo.git
+    targetRevision: main
+    path: kyverno
+    helm:
+      releaseName: kyverno
+      # Optional: Override values
+      # values: |
+      #   admissionController:
+      #     replicas: 3
+      #   backgroundController:
+      #     replicas: 2
+      #   cleanupController:
+      #     replicas: 2
+      #   reportsController:
+      #     replicas: 2
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences in aggregated cluster roles as per Kyverno documentation
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:*
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:admission-controller:*
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:background-controller:*
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:cleanup-controller:*
+      jsonPointers:
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:reports-controller:*
+      jsonPointers:
+        - /rules
+    # Ignore dynamic policy reports
+    - group: kyverno.io
+      kind: AdmissionReport
+    - group: kyverno.io
+      kind: BackgroundScanReport
+    - group: kyverno.io
+      kind: ClusterAdmissionReport
+    - group: kyverno.io
+      kind: ClusterBackgroundScanReport
+    - group: wgpolicyk8s.io
+      kind: PolicyReport
+    - group: wgpolicyk8s.io
+      kind: ClusterPolicyReport
+
+  # Health assessment for Kyverno components
+  health:
+    - group: ""
+      kind: Service
+      check: |
+        hs = {}
+        hs.status = "Healthy"
+        return hs
+    - group: apps
+      kind: Deployment
+      check: |
+        hs = {}
+        if obj.status ~= nil then
+          if obj.status.conditions ~= nil then
+            for i, condition in ipairs(obj.status.conditions) do
+              if condition.type == "Progressing" and condition.reason == "ProgressDeadlineExceeded" then
+                hs.status = "Degraded"
+                hs.message = condition.message
+                return hs
+              end
+              if condition.type == "Available" and condition.status ~= "True" then
+                hs.status = "Degraded"
+                hs.message = condition.message
+                return hs
+              end
+            end
+          end
+          if obj.status.updatedReplicas == obj.spec.replicas and
+             obj.status.replicas == obj.spec.replicas and
+             obj.status.availableReplicas == obj.spec.replicas then
+            hs.status = "Healthy"
+            return hs
+          end
+        end
+        hs.status = "Progressing"
+        hs.message = "Waiting for rollout to finish"
+        return hs
+
