@@ -792,7 +792,7 @@ admissionController:
   createSelfSignedCert: false
 
   # -- (int) Desired number of pods
-  replicas: ~
+  replicas: 3
 
   # -- The number of revisions to keep
   revisionHistoryLimit: 10
@@ -1254,7 +1254,7 @@ backgroundController:
     # - secretName
 
   # -- (int) Desired number of pods
-  replicas: ~
+  replicas: 3
 
   # -- The number of revisions to keep
   revisionHistoryLimit: 10
@@ -1521,7 +1521,7 @@ cleanupController:
     # - secretName
 
   # -- (int) Desired number of pods
-  replicas: ~
+  replicas: 3
 
   # -- The number of revisions to keep
   revisionHistoryLimit: 10
@@ -1838,7 +1838,7 @@ reportsController:
     # - secretName
 
   # -- (int) Desired number of pods
-  replicas: ~
+  replicas: 3
 
   # -- The number of revisions to keep
   revisionHistoryLimit: 10
@@ -2103,7 +2103,7 @@ reports-server:
   fullnameOverride: ""
 
   # -- Number of pod replicas
-  replicaCount: 1
+  replicaCount: 3
 
   image:
     # -- Image registry
