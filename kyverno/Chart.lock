@@ -4,9 +4,9 @@ dependencies:
   version: 3.3.6
 - name: reports-server
   repository: https://nirmata.github.io/kyverno-charts
-  version: 0.2.8-rc2
+  version: 0.2.8
 - name: crds
   repository: ""
   version: 3.3.6
-digest: sha256:7b7790bb8980c39457f543cae19378215dc6194677aaf71e95dc4f49835c7424
-generated: "2025-10-26T12:59:57.732204964Z"
+digest: sha256:ba0ff2631063c3f749b905a112ce2cdb412fe1caeb3a460e6442d88b7af57b63
+generated: "2025-11-03T15:35:08.626807392Z"

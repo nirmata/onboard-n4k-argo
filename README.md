@@ -1,31 +1,24 @@
 # Nirmata N4K ArgoCD Deployment
 
-This repository contains the ArgoCD applications for deploying Nirmata's N4K (Nirmata for Kubernetes) stack including Kyverno, Nirmata Kyverno Operator, and Nirmata Kube Controller.
+This repository contains the ArgoCD applications for deploying Nirmata's N4K (Nirmata enterprise kyverno) stack including Kyverno and Nirmata Kyverno Operator.
 
 ## Applications Overview
 
 ### 1. Kyverno
 
-* **Chart Version**: 3.3.36
-* **App Version**: v1.13.6-n4k.nirmata.5
+* **Chart Version**: 3.3.37
+* **App Version**: v1.13.6-n4k.nirmata.10
 * **Description**: Kubernetes Native Policy Management
 * **Namespace**: kyverno
 * **Dependencies**: reports-server, grafana, crds
 
 ### 2. Nirmata Kyverno Operator
 
-* **Chart Version**: v0.7.0
-* **App Version**: v0.4.7
+* **Chart Version**: 0.8.8
+* **App Version**: v0.4.13
 * **Description**: Helm Chart for Enterprise Kyverno Operator
-* **Namespace**: nirmata-kyverno-operator
+* **Namespace**: nirmata-system
 * **Dependencies**: crds
-
-### 3. Nirmata Kube Controller
-
-* **Chart Version**: 0.2.5
-* **App Version**: v3.10.9
-* **Description**: Nirmata Kubernetes Controller
-* **Namespace**: nirmata
 
 ## Prerequisites
 
@@ -39,20 +32,21 @@ This repository contains the ArgoCD applications for deploying Nirmata's N4K (Ni
 
 The following container images need to be pushed to your ECR repository:
 
-* `ghcr.io/nirmata/nirmata-kube-controller:v3.10.9`
-* `ghcr.io/nirmata/opentelemetry-collector:0.92.0`
-* `ghcr.io/nirmata/nirmata-kyverno-operator:v0.4.7`
-* `ghcr.io/nirmata/nirmata-kyverno-operator:v0.4.7-rc3`
+### Nirmata Kyverno Operator Images
+* `ghcr.io/nirmata/nirmata-kyverno-operator:v0.4.13`
+
+### Kyverno Images
+* `reg.nirmata.io/nirmata/kyverno:v1.13.6-n4k.nirmata.10`
+* `reg.nirmata.io/nirmata/kyvernopre:v1.13.6-n4k.nirmata.10`
+* `reg.nirmata.io/nirmata/background-controller:v1.13.6-n4k.nirmata.10`
+* `reg.nirmata.io/nirmata/cleanup-controller:v1.13.6-n4k.nirmata.10`
+* `reg.nirmata.io/nirmata/reports-controller:v1.13.6-n4k.nirmata.10`
+* `reg.nirmata.io/nirmata/reports-server:v0.2.8`
+* `reg.nirmata.io/nirmata/kyverno-cli:v1.13.6-n4k.nirmata.10`
+
+### Supporting Images
 * `ghcr.io/nirmata/etcd:v3.5.18-cve-free`
 * `ghcr.io/nirmata/kubectl:1.30.2`
-* `reg.nirmata.io/nirmata/kyverno:v1.13.6-n4k.nirmata.5`
-* `reg.nirmata.io/nirmata/kyvernopre:v1.13.6-n4k.nirmata.5`
-* `reg.nirmata.io/nirmata/background-controller:v1.13.6-n4k.nirmata.5`
-* `reg.nirmata.io/nirmata/cleanup-controller:v1.13.6-n4k.nirmata.5`
-* `reg.nirmata.io/nirmata/reports-controller:v1.13.6-n4k.nirmata.5`
-* `reg.nirmata.io/nirmata/reports-server:v0.2.8-rc2`
-* `reg.nirmata.io/nirmata/kyverno-cli:v1.13.6-n4k.nirmata.5`
-* `reg.nirmata.io/nirmata/kubectl:1.33.2`
 
 ## Quick Start
 
@@ -96,7 +90,7 @@ All applications are configured to:
 ### Application URLs
 
 * Repository: `https://github.com/nirmata/onboard-n4k-argo.git`
-* Target Revision: `main`
+* Target Revision: `kyverno-3.3.37`
 * ArgoCD Namespace: `argocd`
 
 ## Directory Structure
@@ -105,28 +99,26 @@ All applications are configured to:
 .
 ├── README.md                     # This documentation
 ├── argocd/                       # ArgoCD application manifests
-│   ├── kyverno-app.yaml
-│   ├── nirmata-kyverno-operator-app.yaml
-│   └── nirmata-kube-controller-app.yaml
-├── scripts/                      # Deployment scripts
-│   ├── setup-ecr.sh
-│   ├── push-images-to-ecr.sh
-│   └── deploy-apps.sh
+│   ├── kyverno.yaml              # Kyverno ArgoCD application
+│   ├── kyverno-operator.yaml     # Nirmata Kyverno Operator ArgoCD application
+│   ├── README.md                 # ArgoCD deployment guide
+│   ├── QUICKSTART.md             # Quick start guide
+│   └── monitor-deployment.sh     # Monitoring script
 ├── kyverno/                      # Kyverno Helm chart
 │   ├── Chart.yaml
 │   ├── values.yaml
 │   ├── templates/
 │   └── charts/
-├── nirmata-kyverno-operator/     # Nirmata Kyverno Operator Helm chart
-│   ├── Chart.yaml
-│   ├── values.yaml
-│   ├── templates/
-│   ├── charts/
-│   └── crds/
-└── nirmata-kube-controller/      # Nirmata Kube Controller Helm chart
+│       ├── reports-server/       # Reports server subchart
+│       ├── grafana/              # Grafana subchart
+│       └── crds/                 # CRDs subchart
+└── nirmata-kyverno-operator/     # Nirmata Kyverno Operator Helm chart
     ├── Chart.yaml
     ├── values.yaml
-    └── templates/
+    ├── templates/
+    ├── charts/
+    │   └── crds/                 # CRDs subchart
+    └── crds/                     # Operator CRDs
 ```
 
 ## Configuration
@@ -155,7 +147,8 @@ Each application has its own `values.yaml` file that can be customized:
 
 * `kyverno/values.yaml` - Kyverno policy engine configuration
 * `nirmata-kyverno-operator/values.yaml` - Operator configuration
-* `nirmata-kube-controller/values.yaml` - Controller configuration
+
+You can override values directly in the ArgoCD application manifests or by modifying the values files in the repository.
 
 ## Monitoring and Troubleshooting
 
@@ -168,23 +161,26 @@ argocd app list
 # Get detailed status
 argocd app get kyverno
 argocd app get nirmata-kyverno-operator
-argocd app get nirmata-kube-controller
 
 # Sync applications manually
+argocd app sync nirmata-kyverno-operator
 argocd app sync kyverno
 ```
 
 ### View Logs
 
 ```bash
-# Kyverno logs
-kubectl logs -n kyverno -l app.kubernetes.io/name=kyverno
+# Kyverno admission controller logs
+kubectl logs -n kyverno -l app.kubernetes.io/component=admission-controller
+
+# Kyverno background controller logs
+kubectl logs -n kyverno -l app.kubernetes.io/component=background-controller
+
+# Kyverno reports controller logs
+kubectl logs -n kyverno -l app.kubernetes.io/component=reports-controller
 
 # Operator logs
-kubectl logs -n nirmata-kyverno-operator -l app.kubernetes.io/name=nirmata-kyverno-operator
-
-# Controller logs
-kubectl logs -n nirmata -l app.kubernetes.io/name=nirmata-kube-controller
+kubectl logs -n nirmata-system -l app.kubernetes.io/name=nirmata-kyverno-operator
 ```
 
 ### Common Issues

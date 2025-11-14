@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nirmata-kyverno-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nirmata/onboard-n4k-argo.git
+    targetRevision: kyverno-3.3.37
+    path: nirmata-kyverno-operator
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nirmata-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: webhook-server-cert
+      namespace: nirmata-system
+      jsonPointers:
+        - /data
+        - /metadata/resourceVersion
+        - /metadata/annotations
+    - group: security.nirmata.io
+      kind: KyvernoConfig
+      namespace: nirmata-system
+      jsonPointers:
+        - /metadata/annotations
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: kyverno-operator-validating-webhook-configuration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
+        - /webhooks/1/clientConfig/caBundle
+        - /metadata/annotations 

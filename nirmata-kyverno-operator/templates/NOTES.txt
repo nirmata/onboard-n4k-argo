@@ -1,0 +1,26 @@
+Chart version: {{ .Chart.Version }}
+
+Thank you for installing {{ .Chart.Name }}! Your release is named {{ .Release.Name }}.
+
+{{- if .Values.enablePolicyset }}
+{{- $policyCRD := lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "policies.kyverno.io" }}
+{{- $clusterPolicyCRD := lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "clusterpolicies.kyverno.io" }}
+{{- if or (not $policyCRD) (not $clusterPolicyCRD) }}
+********************************************************************************
+⚠️  WARNING: Required Kyverno CRDs are missing
+--------------------------------------------------------------------------------
+The policyset controller requires the following Kyverno CRDs to function. 
+Without these, you will see error logs in the controller with every reconciliation:
+
+- Policy (`policies.kyverno.io`)
+- ClusterPolicy (`clusterpolicies.kyverno.io`)
+
+❗ These CRDs are not currently installed in the cluster.
+   Please install Kyverno or ensure its CRDs are present before using this chart.
+{{- end }}
+{{- end }}
+
+{{- if semverCompare "<1.21.0" .Capabilities.KubeVersion.Version }}
+
+⚠️  WARNING: The minimal Kubernetes version officially supported by Kyverno is 1.21. Earlier versions are untested and Kyverno is not guaranteed to work with Kubernetes {{ .Capabilities.KubeVersion.Version }}.
+{{- end }}

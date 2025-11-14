@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "enterprise-kyverno.fullname" . }}
+  labels:
+    {{- include "enterprise-kyverno.labels" . | nindent 4 }}
+    {{- if .Values.globalLabels }}
+    {{- toYaml .Values.globalLabels| nindent 4 }}
+    {{- end }}
+  {{- if .Values.globalAnnotations }}
+  annotations: 
+    {{- toYaml .Values.globalAnnotations| nindent 4 }}
+  {{- end }}
+  namespace: {{ template "enterprise-kyverno.namespace" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "enterprise-kyverno.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+        {{- with .Values.globalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "enterprise-kyverno.selectorLabels" . | nindent 8 }}
+        {{- if .Values.globalLabels }}
+        {{- toYaml .Values.globalLabels| nindent 8 }}
+        {{- end }}
+    spec:
+      imagePullSecrets: 
+      - name: {{ .Values.image.pullSecrets.name }}
+      serviceAccountName: {{ include "enterprise-kyverno.rbac.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: webhook-server
+              containerPort: 9443
+              protocol: TCP
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          - name: OPERATOR_NAMESPACE
+            value: {{ template "enterprise-kyverno.namespace" . }}
+          - name: OPERATOR_NAME
+            value: {{ include "enterprise-kyverno.fullname" . }}
+          - name: STORAGE_PATH
+            value: /var/local
+          - name: HELM_CACHE_HOME
+            value: /var/local/helmcache
+          {{- if or .Values.customCAConfigMap .Values.customCACert }}
+          - name: SYSTEM_CERT_PATH
+            value: "{{ .Values.systemCertPath | default "/etc/ssl/certs" }}/custom-ca.pem"
+          {{- end}}
+          {{- with .Values.envVars }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+          args:
+            - --profile={{- .Values.profile | default "prod" }}
+            - --enable-webhook={{- .Values.enableWebhook | default false}}
+            - --enable-policyset={{- .Values.enablePolicyset | default false}}
+            - --kyverno-deployment={{- .Values.kyvernoDeployment | default "kyverno-admission-controller"}}
+            - --kyverno-namespace={{- .Values.kyvernoNamespace | default "kyverno"}}            
+            - --install-rbac={{- .Values.rbac.operatorHasAdminPerms | default false }}
+            - --manage-certs={{- include "enterprise-kyverno.managecerts" . }}
+            - --prevent-policy-tamper={{- include "enterprise-kyverno.preventPolicyTamper" . }}
+          volumeMounts:
+          - mountPath: /var/local
+            name: local-vol
+          - mountPath: /home
+            name: home-vol
+          {{- if .Values.enableWebhook }}
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
+          {{- end }}
+          {{- if or .Values.customCAConfigMap .Values.customCACert }}
+          - name: custom-ca-store
+            mountPath: {{ .Values.systemCertPath | default "/etc/ssl/certs" }}/custom-ca.pem
+            subPath: custom-ca.pem
+          {{- end}}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: home-vol
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: local-vol
+        emptyDir:
+          sizeLimit: 100Mi
+      {{- if .Values.enableWebhook }}
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert
+      {{- end }}
+      {{- if .Values.customCAConfigMap }}
+      - name: custom-ca-store
+        configMap:
+          name: {{ .Values.customCAConfigMap }}
+      {{- else if .Values.customCACert }}
+      - name: custom-ca-store
+        configMap:
+          name: {{ include "enterprise-kyverno.fullname" . }}-custom-ca
+      {{- end}}
