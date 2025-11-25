@@ -15,7 +15,7 @@ global:
   # When set, it will override any values set under `imagePullSecrets` under different components across the chart.
   imagePullSecrets: []
 
-  kubectlImage: "ghcr.io/nirmata/kubectl:1.33.2"
+  kubectlImage: "ghcr.io/nirmata/kubectl:1.34.2"
 
   # -- Resync period for informers
   resyncPeriod: 15m
@@ -215,6 +215,11 @@ config:
 
   # -- Generate success events.
   generateSuccessEvents: false
+
+  # -- Generate events on policy objects.
+  # When set to false, events (violations, errors, etc.) will only be created on resources, not on policy objects.
+  # This reduces event noise in multi-tenant environments where policy events may not be needed.
+  generatePolicyEvents: true
 
   # -- Resource types to be skipped by the Kyverno policy engine.
   # Make sure to surround each entry in quotes so that it doesn't get parsed as a nested YAML list.
@@ -509,7 +514,7 @@ webhooksCleanup:
     repository: reg.nirmata.io/nirmata/kubectl
     # -- Image tag
     # Defaults to `latest` if omitted
-    tag: '1.32.1'
+    tag: '1.34.2'
     # -- (string) Image pull policy
     # Defaults to image.pullPolicy if omitted
     pullPolicy: ~
@@ -566,7 +571,7 @@ policyReportsCleanup:
     repository: nirmata/kubectl
     # -- Image tag
     # Defaults to `latest` if omitted
-    tag: '1.31.1'
+    tag: '1.34.2'
     # -- (string) Image pull policy
     # Defaults to image.pullPolicy if omitted
     pullPolicy: ~
@@ -2141,6 +2146,11 @@ reports-server:
   podSecurityContext:
     fsGroup: 2000
 
+  # -- Server version to use (v1 or v2). Defaults to v1 for backward compatibility.
+  # v1: Stable implementation (default)
+  # v2: Optimized implementation with improved performance
+  serverVersion: v1
+
   # -- Provide additional environment variables to the pods. Map with the same format as kubernetes deployment spec's env.
   podEnv: {}
 
@@ -2284,7 +2294,7 @@ reports-server:
         # -- Image repository
         repository: nirmata/etcd
         # -- Image tag
-        tag: v3.5.18-cve-free
+        tag: v3.6.6-os-cve-fixed
 
       # -- Image pull secrets
       imagePullSecrets: []
@@ -2298,6 +2308,11 @@ reports-server:
       # - NOTE: keep this **10‑20 % greater** than `quotaBackendBytes`
       # This value defines the size of the persistent volume claim (PVC) for etcd.
       storage: 2Gi
+
+      # -- Storage class name for etcd PVC
+      # - Leave empty to use the default storage class
+      # - Set to a specific storage class name (e.g., "fast", "standard", "aws-ebs")
+      storageClassName: ""
 
     # Quota for etcd's internal database (BoltDB) **in bytes**
     # - What it limits: the logical size of the etcd DB file, *not* the PVC.
@@ -2391,10 +2406,12 @@ reports-server:
 
       # -- Store ephemeral reports in reports-server
       installEphemeralReportsService: true
+      # -- Store open reports in reports-server
+      installOpenreportsService: false
 
     migrateReportsServer:
       # -- Create api services only when reports-server is ready and migration is guaranteed
-      enabled: true
+      enabled: false
 
 
   jobConfigurations:
@@ -2405,7 +2422,7 @@ reports-server:
       repository: nirmata/kubectl
       # -- Image tag
       # Defaults to `latest` if omitted
-      tag: '1.34.0'
+      tag: '1.34.2'
       # -- (string) Image pull policy
       # Defaults to image.pullPolicy if omitted
       pullPolicy: ~
