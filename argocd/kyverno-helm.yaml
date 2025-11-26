@@ -4,6 +4,8 @@ kind: Application
 metadata:
   name: kyverno
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: PruneLast=false
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -41,6 +43,7 @@ spec:
       - PruneLast=false
       - ApplyOutOfSyncOnly=true
       - ServerSideApply=false
+      - SkipHooks=true
     retry:
       limit: 5
       backoff:
@@ -104,43 +107,3 @@ spec:
         - /spec/updateStrategy
         - /spec/persistentVolumeClaimRetentionPolicy
         - /status
-    - group: batch
-      kind: Job
-      name: reports-server-post-install-install-api-services
-      namespace: kyverno
-      jsonPointers:
-        - /spec
-        - /metadata
-        - /status
-        - /metadata/annotations/helm.sh~1hook
-        - /metadata/annotations/helm.sh~1hook-delete-policy
-        - /metadata/annotations/helm.sh~1hook-weight
-    - group: ""
-      kind: ServiceAccount
-      name: kyverno-migrate-resources
-      namespace: kyverno
-      jsonPointers:
-        - /spec
-        - /metadata
-        - /metadata/annotations/helm.sh~1hook
-        - /metadata/annotations/helm.sh~1hook-delete-policy
-        - /metadata/annotations/helm.sh~1hook-weight
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: kyverno:migrate-resources
-      jsonPointers:
-        - /spec
-        - /metadata
-        - /metadata/annotations/helm.sh~1hook
-        - /metadata/annotations/helm.sh~1hook-delete-policy
-        - /metadata/annotations/helm.sh~1hook-weight
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRoleBinding
-      name: kyverno:migrate-resources
-      jsonPointers:
-        - /spec
-        - /metadata
-        - /metadata/annotations/helm.sh~1hook
-        - /metadata/annotations/helm.sh~1hook-delete-policy
-        - /metadata/annotations/helm.sh~1hook-weight
-
