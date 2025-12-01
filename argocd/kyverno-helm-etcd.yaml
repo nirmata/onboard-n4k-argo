@@ -1,0 +1,115 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: PruneLast=false
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://nirmata.github.io/kyverno-charts/'
+      chart: kyverno
+      targetRevision: 3.3.38
+      helm:
+        releaseName: kyverno
+        skipCrds: false
+        valueFiles:
+          - $values/kyverno/values-etcd.yaml
+        parameters:
+          - name: crds.install
+            value: "true"
+          - name: reports-server.install
+            value: "true"
+    - repoURL: 'https://github.com/nirmata/onboard-n4k-argo.git'
+      targetRevision: kyverno-3.3.38
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
+      - SkipDryRunOnMissingResource=true
+      - DisableOpenAPIValidation=true
+      - RespectIgnoreDifferences=true
+      - PruneLast=false
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=false
+      - SkipHooks=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  ignoreDifferences:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      name: kyverno:migrate-*
+      jsonPointers:
+        - /metadata
+        - /subjects
+    - group: openreports.io
+      kind: ClusterReport
+      jsonPointers:
+        - /metadata
+        - /spec
+        - /status
+    - group: wgpolicyk8s.io
+      kind: ClusterPolicyReport
+      jsonPointers:
+        - /metadata
+        - /spec
+        - /status
+    - group: wgpolicyk8s.io
+      kind: PolicyReport
+      jsonPointers:
+        - /metadata
+        - /spec
+        - /status
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1.reports.kyverno.io
+      jsonPointers:
+        - /spec/caBundle
+        - /spec
+        - /metadata
+        - /status
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1alpha1.openreports.io
+      jsonPointers:
+        - /spec/caBundle
+        - /spec
+        - /metadata
+        - /status
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1alpha2.wgpolicyk8s.io
+      jsonPointers:
+        - /spec/caBundle
+        - /spec
+        - /metadata
+        - /status
+    - group: apps
+      kind: StatefulSet
+      name: etcd
+      namespace: kyverno
+      jsonPointers:
+        - /spec/template/metadata
+        - /spec/template/spec
+        - /metadata/annotations
+        - /metadata/labels
+        - /spec/volumeClaimTemplates
+        - /spec/revisionHistoryLimit
+        - /spec/updateStrategy
+        - /spec/persistentVolumeClaimRetentionPolicy
+        - /status
