@@ -5,7 +5,7 @@ metadata:
   name: kyverno
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-options: PruneLast=false
+    argocd.argoproj.io/sync-options: PruneLast=false,ServerSideApply=true
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -39,6 +39,8 @@ spec:
       - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true
       - PruneLast=false
+      - ServerSideApply=true
+      - Replace=true
     retry:
       limit: 5
       backoff:

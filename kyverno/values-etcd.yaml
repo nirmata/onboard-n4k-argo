@@ -102,9 +102,9 @@ crds:
     enabled: true
 
   # -- Additional CRDs annotations
-  annotations: {}
-    # argocd.argoproj.io/sync-options: Replace=true
-    # strategy.spinnaker.io/replace: 'true'
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true,Replace=true
+    argocd.argoproj.io/sync-wave: "-5"
 
   # -- Additional CRDs labels
   customLabels: {}
@@ -354,6 +354,7 @@ config:
   webhookAnnotations:
     # Example to disable admission enforcer on AKS:
     'admissions.enforcer/disabled': 'true'
+    argocd.argoproj.io/sync-options: Replace=true
 
   # -- Disable generation and management of webhooks by kyverno
   disableAutoWebhookGeneration:
