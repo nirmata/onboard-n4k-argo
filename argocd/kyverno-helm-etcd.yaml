@@ -36,10 +36,14 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - Replace=true
       - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true
       - PruneLast=false
-      - Replace=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=false
+      - SkipHooks=true 
+      - IgnoreDifferences=true
     retry:
       limit: 5
       backoff:
@@ -47,34 +51,6 @@ spec:
         factor: 2
         maxDuration: 3m
   ignoreDifferences:
-    - group: ""
-      kind: ServiceAccount
-      name: kyverno-migrate-resources
-      namespace: kyverno
-      jsonPointers:
-        - /metadata
-        - /secrets
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: kyverno:migrate-resources
-      jsonPointers:
-        - /metadata
-        - /rules
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRoleBinding
-      name: kyverno:migrate-resources
-      jsonPointers:
-        - /metadata
-        - /subjects
-        - /roleRef
-    - group: batch
-      kind: Job
-      namespace: kyverno
-      name: kyverno-hook-*
-      jsonPointers:
-        - /metadata
-        - /spec
-        - /status
     - group: openreports.io
       kind: ClusterReport
       jsonPointers:
@@ -131,3 +107,46 @@ spec:
         - /spec/updateStrategy
         - /spec/persistentVolumeClaimRetentionPolicy
         - /status
+    - group: batch
+      kind: Job
+      name: reports-server-post-install-install-api-services
+      namespace: kyverno
+      jsonPointers:
+        - /spec
+        - /metadata
+        - /status
+        - /metadata/annotations/helm.sh~1hook
+        - /metadata/annotations/helm.sh~1hook-delete-policy
+        - /
+    - group: ""
+      kind: ServiceAccount
+      name: kyverno-migrate-resources
+      namespace: kyverno
+      jsonPointers:
+        - /
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:migrate-resources
+      jsonPointers:
+        - /
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      name: kyverno:migrate-resources
+      jsonPointers:
+        - /
+    - group: ""
+      kind: ServiceAccount
+      name: kyverno-hook-pre-delete
+      namespace: kyverno
+      jsonPointers:
+        - /
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:hook-pre-delete
+      jsonPointers:
+        - /
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      name: kyverno:hook-pre-delete
+      jsonPointers:
+        - /
