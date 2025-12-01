@@ -36,13 +36,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - Replace=true
       - SkipDryRunOnMissingResource=true
-      - DisableOpenAPIValidation=true
       - RespectIgnoreDifferences=true
       - PruneLast=false
-      - ApplyOutOfSyncOnly=true
-      - ServerSideApply=true
     retry:
       limit: 5
       backoff:
