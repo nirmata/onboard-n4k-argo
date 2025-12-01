@@ -112,7 +112,7 @@ crds:
   migration:
 
     # -- Enable CRDs migration using helm post upgrade hook
-    enabled: false
+    enabled: true
 
     # -- Resources to migrate
     resources:
@@ -562,7 +562,7 @@ webhooksCleanup:
 
 policyReportsCleanup:
   # -- Create a helm post-upgrade hook to cleanup the old policy reports.
-  enabled: false
+  enabled: true
 
   image:
     # -- (string) Image registry
