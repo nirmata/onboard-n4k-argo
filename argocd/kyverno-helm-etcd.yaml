@@ -6,6 +6,7 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-options: PruneLast=false
+    argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true 
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -42,7 +43,7 @@ spec:
       - RespectIgnoreDifferences=true
       - PruneLast=false
       - ApplyOutOfSyncOnly=true
-      - ServerSideApply=false
+      - ServerSideApply=true
       - SkipHooks=true
     retry:
       limit: 5
