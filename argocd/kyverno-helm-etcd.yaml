@@ -43,7 +43,6 @@ spec:
       - PruneLast=false
       - ApplyOutOfSyncOnly=true
       - ServerSideApply=true
-      - SkipHooks=true
     retry:
       limit: 5
       backoff:
@@ -51,12 +50,6 @@ spec:
         factor: 2
         maxDuration: 3m
   ignoreDifferences:
-    - group: rbac.authorization.k8s.io
-      kind: ClusterRoleBinding
-      name: kyverno:migrate-*
-      jsonPointers:
-        - /metadata
-        - /subjects
     - group: openreports.io
       kind: ClusterReport
       jsonPointers:
