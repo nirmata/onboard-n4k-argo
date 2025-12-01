@@ -106,16 +106,14 @@ spec:
         - /spec/revisionHistoryLimit
         - /spec/updateStrategy
         - /spec/persistentVolumeClaimRetentionPolicy
-        - /status
-    - group: batch
+        - /status    - group: batch
       kind: Job
       name: reports-server-post-install-install-api-services
       namespace: kyverno
       jsonPointers:
         - /spec
         - /metadata
-        - /status
-        - /metadata/annotations/helm.sh~1hook
+        - /status        - /metadata/annotations/helm.sh~1hook
         - /metadata/annotations/helm.sh~1hook-delete-policy
         - /
     - group: ""
@@ -150,3 +148,4 @@ spec:
       name: kyverno:hook-pre-delete
       jsonPointers:
         - /
+
