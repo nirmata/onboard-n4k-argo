@@ -5,7 +5,7 @@ metadata:
   name: kyverno
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-options: PruneLast=false,ServerSideApply=true
+    argocd.argoproj.io/sync-options: PruneLast=false
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -48,6 +48,34 @@ spec:
         factor: 2
         maxDuration: 3m
   ignoreDifferences:
+    - group: ""
+      kind: ServiceAccount
+      name: kyverno-migrate-resources
+      namespace: kyverno
+      jsonPointers:
+        - /metadata
+        - /secrets
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:migrate-resources
+      jsonPointers:
+        - /metadata
+        - /rules
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      name: kyverno:migrate-resources
+      jsonPointers:
+        - /metadata
+        - /subjects
+        - /roleRef
+    - group: batch
+      kind: Job
+      namespace: kyverno
+      name: kyverno-hook-*
+      jsonPointers:
+        - /metadata
+        - /spec
+        - /status
     - group: openreports.io
       kind: ClusterReport
       jsonPointers:
