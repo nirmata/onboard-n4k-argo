@@ -39,7 +39,6 @@ spec:
       - SkipDryRunOnMissingResource=true
       - RespectIgnoreDifferences=true
       - PruneLast=false
-      - ServerSideApply=true
       - Replace=true
     retry:
       limit: 5
