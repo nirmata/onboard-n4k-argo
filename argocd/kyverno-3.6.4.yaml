@@ -24,6 +24,8 @@ spec:
             value: "true"
           - name: reports-server.install
             value: "true"
+          - name: crds.migration.enabled
+            value: "false"
     - repoURL: 'https://github.com/nirmata/onboard-n4k-argo.git'
       targetRevision: kyverno-3.6.4
       ref: values
