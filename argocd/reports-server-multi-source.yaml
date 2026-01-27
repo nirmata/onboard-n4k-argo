@@ -1,0 +1,75 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: reports-server
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://nirmata.github.io/reports-server/' ## report-server helm chart
+    chart: reports-server
+    targetRevision: 0.2.0
+    helm:
+      valueFiles:
+      - $values/reports-server/values.yaml
+  - repoURL: 'https://github.com/nirmata/onboard-n4k-argo.git'
+    targetRevision: c-fix-argo-reports-server-1.13
+    ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - DisableOpenAPIValidation=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m0s
+  ignoreDifferences:
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1.reports.kyverno.io
+      jsonPointers:
+        - /spec
+        - /metadata
+        - /status
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1alpha2.wgpolicyk8s.io
+      jsonPointers:
+        - /spec
+        - /metadata
+        - /status
+    - group: apps
+      kind: StatefulSet
+      name: etcd
+      namespace: kyverno
+      jsonPointers:
+        - /spec/template/metadata
+        - /spec/template/spec
+        - /metadata/annotations
+        - /metadata/labels
+        - /spec/volumeClaimTemplates
+        - /spec/revisionHistoryLimit
+        - /spec/updateStrategy
+        - /spec/persistentVolumeClaimRetentionPolicy
+        - /status
+    - group: batch
+      kind: Job
+      name: reports-server-post-install-install-api-services
+      namespace: kyverno
+      jsonPointers:
+        - /spec
+        - /metadata
+        - /status
