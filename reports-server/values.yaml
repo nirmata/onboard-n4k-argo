@@ -246,18 +246,18 @@ config:
     portSecretKeyName: "port"
 
     # -- Database name
-    name: reportsdb
+    name: postgres
     # -- The database name will be read from this `key` in the specified Secret, when `db.secretName` is set.
     dbNameSecretKeyName: "dbname"
 
     # -- Database user
-    user: app
+    user: postgres
 
     # -- The database username will be read from this `key` in the specified Secret, when `db.secretName` is set.
     userSecretKeyName: "username"
 
     # -- Database password
-    password: password
+    password: postgres
 
     # -- The database password will be read from this `key` in the specified Secret, when `db.secretName` is set.
     passwordSecretKeyName: "password"
