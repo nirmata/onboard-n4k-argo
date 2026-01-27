@@ -142,7 +142,7 @@ crds:
   migration:
 
     # -- Enable CRDs migration using helm post upgrade hook
-    enabled: false
+    enabled: true
 
     # -- Resources to migrate
     resources:
