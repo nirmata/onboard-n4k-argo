@@ -13,7 +13,7 @@ spec:
   sources:
     - repoURL: 'https://nirmata.github.io/kyverno-charts/'
       chart: kyverno
-      targetRevision: 3.3.38
+      targetRevision: 3.6.4
       helm:
         releaseName: kyverno
         skipCrds: false
@@ -25,7 +25,7 @@ spec:
           - name: reports-server.install
             value: "true"
     - repoURL: 'https://github.com/nirmata/onboard-n4k-argo.git'
-      targetRevision: kyverno-3.3.38
+      targetRevision: kyverno-3.6.4
       ref: values
   destination:
     server: https://kubernetes.default.svc

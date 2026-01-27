@@ -7,13 +7,17 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/nirmata/onboard-n4k-argo.git
-    targetRevision: kyverno-3.3.37
-    path: nirmata-kyverno-operator
-    helm:
-      valueFiles:
-        - values.yaml
+  sources:
+    - repoURL: 'https://nirmata.github.io/kyverno-charts/'
+      chart: nirmata-kyverno-operator
+      targetRevision: 0.8.9
+      helm:
+        releaseName: nirmata-kyverno-operator
+        valueFiles:
+          - $values/nirmata-kyverno-operator/values.yaml
+    - repoURL: 'https://github.com/nirmata/onboard-n4k-argo.git'
+      targetRevision: kyverno-3.6.4
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: nirmata-system
@@ -50,4 +54,4 @@ spec:
       jsonPointers:
         - /webhooks/0/clientConfig/caBundle
         - /webhooks/1/clientConfig/caBundle
-        - /metadata/annotations 
+        - /metadata/annotations

@@ -17,14 +17,12 @@
 {{- fail "CRD clusterephemeralreports disabled while reportsController enabled" }}
 {{- end }}
 
-{{- if hasKey .Values "mode" -}}
-  {{- fail "mode is not supported anymore, please remove it from your release and use admissionController.replicas instead." -}}
-{{- end -}}
-
-{{- if eq (include "kyverno.namespace" .) "kube-system" -}}
-  {{- fail "Kyverno cannot be installed in namespace kube-system." -}}
-{{- end -}}
-
+{{- if and (eq .Values.backgroundController.enabled true) (eq .Values.backgroundController.sanityChecks true) (eq .Values.crds.groups.reports.ephemeralreports false) (eq .Values.crds.reportsServer.enabled false) }}
+{{- fail "CRD ephemeralreports disabled while reportsController enabled" }}
+{{- end }}
+{{- if and (eq .Values.backgroundController.enabled true) (eq .Values.backgroundController.sanityChecks true) (eq .Values.crds.groups.reports.clusterephemeralreports false) (eq .Values.crds.reportsServer.enabled false) }}
+{{- fail "CRD clusterephemeralreports disabled while reportsController enabled" }}
+{{- end }}
 
 {{- if and (eq .Values.crds.reportsServer.enabled true) (eq (include "kyverno.installReportsServer" .) "false") -}}
   {{- $reportsServerPods := lookup "v1" "Pod" (include "kyverno.namespace" .) "" -}}
@@ -40,7 +38,7 @@
         {{- end -}}
       {{- end -}}
     {{- end -}}
-    
+
     {{- $reportsServerAPIAvailable := false -}}
     {{- range $apiServices.items -}}
       {{- if and .spec.service (contains "reports-server" .spec.service.name) -}}
@@ -53,7 +51,7 @@
         {{- end -}}
       {{- end -}}
     {{- end -}}
-    
+
     {{- if not $reportsServerRunning -}}
       {{- fail (join "\n" (list
         ""
@@ -66,7 +64,7 @@
         ))
       -}}
     {{- end -}}
-    
+
     {{- if not $reportsServerAPIAvailable -}}
       {{- fail (join "\n" (list
         ""
@@ -80,6 +78,14 @@
       -}}
     {{- end -}}
   {{- end -}}
+{{- end -}}
+
+{{- if hasKey .Values "mode" -}}
+  {{- fail "mode is not supported anymore, please remove it from your release and use admissionController.replicas instead." -}}
+{{- end -}}
+
+{{- if eq (include "kyverno.namespace" .) "kube-system" -}}
+  {{- fail "Kyverno cannot be installed in namespace kube-system." -}}
 {{- end -}}
 
 {{- if not .Values.upgrade.fromV2 -}}

@@ -1,5 +1,5 @@
 {{- if .Values.config.preserve -}}
-{{- if not .Values.templating.enabled -}}
+{{- if not .Values.global.templating.enabled -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -92,7 +92,7 @@ spec:
           image: {{ (include "kyverno.image" (dict "globalRegistry" .Values.global.image.registry "image" .Values.webhooksCleanup.image "defaultTag" (default .Chart.AppVersion .Values.webhooksCleanup.image.tag))) | quote }}
           imagePullPolicy: {{ .Values.webhooksCleanup.image.pullPolicy }}
           command:
-            - /bin/bash
+            - sh
             - '-c'
             - |-
               set -euo pipefail
