@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/nirmata/onboard-n4k-argo.git
-    targetRevision: kyverno-3.3.37
+    targetRevision: kyverno-3.3.38
     path: kyverno
     helm:
       releaseName: kyverno
