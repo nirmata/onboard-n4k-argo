@@ -5,9 +5,13 @@ metadata:
   name: kyverno
   namespace: argocd
   annotations:
+    # Notifications and sync options
     argocd.argoproj.io/sync-options: PruneLast=false
+    # Skip pre/post delete hooks to avoid finalizer delays
+    argocd.argoproj.io/hook: Skip
   finalizers:
-    - resources-finalizer.argocd.argoproj.io
+    # Foreground finalizer ensures all resources (including CRDs) are deleted
+    - resources-finalizer.argocd.argoproj.io/foreground
 spec:
   project: default
   sources:
@@ -16,6 +20,7 @@ spec:
       targetRevision: 3.6.4
       helm:
         releaseName: kyverno
+        # Don't skip CRDs - manage them with the app for proper deletion
         skipCrds: false
         valueFiles:
           - $values/kyverno/values.yaml
@@ -24,8 +29,15 @@ spec:
             value: "true"
           - name: reports-server.install
             value: "true"
+          # Disable CRD migration hooks - prevents "already exists" errors
           - name: crds.migration.enabled
             value: "false"
+          # Disable config preservation hooks (removes kyverno-remove-configmap duplicates)
+          - name: config.preserve
+            value: "false"
+          # Enable auto-deletion of webhooks on app deletion
+          - name: webhooksCleanup.autoDeleteWebhooks.enabled
+            value: "true"
     - repoURL: 'https://github.com/nirmata/onboard-n4k-argo.git'
       targetRevision: kyverno-3.6.4
       ref: values
@@ -34,8 +46,10 @@ spec:
     namespace: kyverno
   syncPolicy:
     automated:
-      prune: false
+      prune: true
       selfHeal: true
+      # Don't allow empty - prevents accidental deletion of all resources
+      allowEmpty: false
     syncOptions:
       - CreateNamespace=true
       - Replace=true
@@ -45,6 +59,7 @@ spec:
       - PruneLast=false
       - ApplyOutOfSyncOnly=true
       - ServerSideApply=false
+      # Skip Helm hooks during sync
       - SkipHooks=true
     retry:
       limit: 5
@@ -52,19 +67,58 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
+  # Ignore differences for resources that change dynamically
   ignoreDifferences:
+    # Ignore all migrate hook resources
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: kyverno:migrate-resources
+      jqPathExpressions:
+        - .
     - group: rbac.authorization.k8s.io
       kind: ClusterRoleBinding
-      name: kyverno:migrate-*
-      jsonPointers:
-        - /metadata
-        - /subjects
+      name: kyverno:migrate-resources
+      jqPathExpressions:
+        - .
+    - group: ""
+      kind: ServiceAccount
+      name: kyverno-migrate-resources
+      namespace: kyverno
+      jqPathExpressions:
+        - .
+    # Ignore remove-configmap hook resources
+    - group: rbac.authorization.k8s.io
+      kind: Role
+      name: kyverno:remove-configmap
+      namespace: kyverno
+      jqPathExpressions:
+        - .
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+      name: kyverno:remove-configmap
+      namespace: kyverno
+      jqPathExpressions:
+        - .
+    - group: ""
+      kind: ServiceAccount
+      name: kyverno-remove-configmap
+      namespace: kyverno
+      jqPathExpressions:
+        - .
+    - group: batch
+      kind: Job
+      name: kyverno-remove-configmap
+      namespace: kyverno
+      jqPathExpressions:
+        - .
+    # Ignore openreports
     - group: openreports.io
       kind: ClusterReport
       jsonPointers:
         - /metadata
         - /spec
         - /status
+    # Ignore policy reports (constantly changing)
     - group: wgpolicyk8s.io
       kind: ClusterPolicyReport
       jsonPointers:
@@ -77,6 +131,7 @@ spec:
         - /metadata
         - /spec
         - /status
+    # Ignore APIServices (caBundle changes)
     - group: apiregistration.k8s.io
       kind: APIService
       name: v1.reports.kyverno.io
@@ -101,6 +156,7 @@ spec:
         - /spec
         - /metadata
         - /status
+    # Ignore etcd StatefulSet (volumeClaimTemplates can't be updated)
     - group: apps
       kind: StatefulSet
       name: etcd
